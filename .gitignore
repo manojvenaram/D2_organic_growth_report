@@ -1,0 +1,33 @@
+# Compiled class file
+target/
+*.class
+
+# Log files
+*.log
+
+# Package Files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Excel datasets (strictly excluded per instruction)
+*.xlsx
+*.xls
+
+# Other local workspace folders (strictly excluded per instruction)
+D2_Organic_Growth_Report_Complete.zip_expanded/
+chatbot-edition/
+
+# Virtual Machine / OS / IDE files
+.vscode/
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+.DS_Store
+Thumbs.db
