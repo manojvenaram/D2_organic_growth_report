@@ -9,6 +9,8 @@ import com.example.excelviz.controller.ChartDataController;
 import com.example.excelviz.controller.MetadataController;
 import com.example.excelviz.controller.SiteCompareController;
 import com.example.excelviz.controller.ExcelUploadController;
+import com.example.excelviz.controller.GrowthController;
+import com.example.excelviz.service.GrowthAnalyticsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,13 +31,15 @@ class ExcelvizApplicationTests {
     @Autowired private MetadataController     metadataController;
     @Autowired private SiteCompareController  siteCompareController;
     @Autowired private ExcelUploadController  excelUploadController;
+    @Autowired private GrowthController       growthController;
 
     // ── Services ──────────────────────────────────────────────────
-    @Autowired private ExcelParserService  excelParserService;
-    @Autowired private ExcelCacheService   excelCacheService;
-    @Autowired private MetadataService     metadataService;
-    @Autowired private AggregationService  aggregationService;
-    @Autowired private SiteCompareService  siteCompareService;
+    @Autowired private ExcelParserService     excelParserService;
+    @Autowired private ExcelCacheService      excelCacheService;
+    @Autowired private MetadataService        metadataService;
+    @Autowired private AggregationService     aggregationService;
+    @Autowired private SiteCompareService     siteCompareService;
+    @Autowired private GrowthAnalyticsService growthAnalyticsService;
 
     /**
      * Verifies the Spring application context loads without errors.
@@ -44,17 +48,19 @@ class ExcelvizApplicationTests {
     @Test
     void contextLoads() {
         // Controllers
-        assertThat(chartDataController)   .isNotNull();
-        assertThat(metadataController)    .isNotNull();
-        assertThat(siteCompareController) .isNotNull();
-        assertThat(excelUploadController) .isNotNull();
+        assertThat(chartDataController)     .isNotNull();
+        assertThat(metadataController)      .isNotNull();
+        assertThat(siteCompareController)   .isNotNull();
+        assertThat(excelUploadController)   .isNotNull();
+        assertThat(growthController)        .isNotNull();
 
         // Services
-        assertThat(excelParserService)    .isNotNull();
-        assertThat(excelCacheService)     .isNotNull();
-        assertThat(metadataService)       .isNotNull();
-        assertThat(aggregationService)    .isNotNull();
-        assertThat(siteCompareService)    .isNotNull();
+        assertThat(excelParserService)      .isNotNull();
+        assertThat(excelCacheService)       .isNotNull();
+        assertThat(metadataService)         .isNotNull();
+        assertThat(aggregationService)      .isNotNull();
+        assertThat(siteCompareService)      .isNotNull();
+        assertThat(growthAnalyticsService)  .isNotNull();
     }
 
     /**
@@ -80,5 +86,13 @@ class ExcelvizApplicationTests {
                 .isNotNull().isEmpty();
         assertThat(metadataService.getGmpGroupsBySiteAndProfile("any-site", "any-profile"))
                 .isNotNull().isEmpty();
+    }
+
+    @Test
+    void growthAnalyticsReturnsEmptySummaryBeforeUpload() {
+        var summary = growthAnalyticsService.getExecutiveSummary("CREATED");
+        assertThat(summary).isNotNull();
+        assertThat(summary.getYearlyPoints()).isEmpty();
+        assertThat(summary.getSiteRows()).isEmpty();
     }
 }
