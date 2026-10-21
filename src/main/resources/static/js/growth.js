@@ -71,16 +71,22 @@ function renderExecutiveSlide(data) {
     if (emptyEl) emptyEl.style.display = "none";
     if (contentEl) contentEl.style.display = "flex";
 
-    // 1. Render Volume Trajectory Curve Graph
-    if (data.yearlyPoints && data.yearlyPoints.length > 0) {
-        renderExecChart(data.yearlyPoints);
+    // Update dynamic subtitle
+    const subtitleEl = document.getElementById("execChartSubtitle");
+    if (subtitleEl && data.baselineYear && data.currentYear) {
+        subtitleEl.textContent = `Active Manufacturing Facilities Aggregated Volume Trajectory & Yearly CAGR (${data.baselineYear} – ${data.currentYear})`;
     }
 
-    // 2. Render Active Sites Table with CAGR
+    // 1. Render Volume Trajectory Curve Graph with Yearly CAGR
+    if (data.yearlyPoints && data.yearlyPoints.length > 0) {
+        renderExecChart(data.yearlyPoints, data.baselineYear);
+    }
+
+    // 2. Render Active Sites Table with dynamic CAGR (e.g. 5-Year CAGR, 10-Year CAGR)
     renderExecTable(data);
 }
 
-function renderExecChart(points) {
+function renderExecChart(points, baselineYear) {
     const canvas = document.getElementById("execChartCanvas");
     if (!canvas) return;
 
@@ -93,25 +99,40 @@ function renderExecChart(points) {
     const isDark = !document.body.classList.contains("light");
 
     const labels = points.map(p => String(p.year));
-    const dataVals = points.map(p => p.volume);
+    const volumeVals = points.map(p => p.volume);
+    const cagrVals = points.map(p => (p.cagrPct !== null && p.cagrPct !== undefined) ? p.cagrPct : 0.0);
 
     const customLabelsPlugin = {
         id: "customLabelsPlugin",
         afterDatasetsDraw(chart) {
             const chartCtx = chart.ctx;
-            const meta = chart.getDatasetMeta(0);
+            const meta0 = chart.getDatasetMeta(0);
 
             chartCtx.save();
-            chartCtx.font = "bold 11px Inter, sans-serif";
             chartCtx.textAlign = "center";
-            chartCtx.textBaseline = "bottom";
 
-            meta.data.forEach((element, index) => {
+            meta0.data.forEach((element, index) => {
+                if (element.skip) return;
                 const { x, y } = element;
                 const pt = points[index];
 
+                // 1. Draw Document Volume
+                chartCtx.font = "bold 11px Inter, sans-serif";
                 chartCtx.fillStyle = isDark ? "#ffffff" : "#0f172a";
-                chartCtx.fillText(pt.volume.toLocaleString(), x, y - 10);
+                chartCtx.fillText(pt.volume.toLocaleString(), x, y - 20);
+
+                // 2. Draw Yearly CAGR Label directly above/below node
+                if (index === 0) {
+                    chartCtx.font = "600 10px Inter, sans-serif";
+                    chartCtx.fillStyle = isDark ? "#94a3b8" : "#64748b";
+                    chartCtx.fillText("Baseline", x, y - 8);
+                } else if (pt.cagrPct !== null && pt.cagrPct !== undefined) {
+                    const cagrSign = pt.cagrPct >= 0 ? "+" : "";
+                    const cagrText = `${cagrSign}${pt.cagrPct.toFixed(1)}% CAGR`;
+                    chartCtx.font = "bold 10px Inter, sans-serif";
+                    chartCtx.fillStyle = pt.cagrPct >= 0 ? "#10b981" : "#f43f5e";
+                    chartCtx.fillText(cagrText, x, y - 8);
+                }
             });
             chartCtx.restore();
         }
@@ -119,37 +140,60 @@ function renderExecChart(points) {
 
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height || 300);
     if (isDark) {
-        gradient.addColorStop(0, "rgba(59, 130, 246, 0.40)");
-        gradient.addColorStop(1, "rgba(59, 130, 246, 0.02)");
+        gradient.addColorStop(0, "rgba(2, 132, 199, 0.40)");
+        gradient.addColorStop(1, "rgba(2, 132, 199, 0.02)");
     } else {
-        gradient.addColorStop(0, "rgba(37, 99, 235, 0.30)");
-        gradient.addColorStop(1, "rgba(37, 99, 235, 0.02)");
+        gradient.addColorStop(0, "rgba(2, 132, 199, 0.25)");
+        gradient.addColorStop(1, "rgba(2, 132, 199, 0.02)");
     }
 
     execChartInstance = new Chart(ctx, {
         type: "line",
         data: {
             labels: labels,
-            datasets: [{
-                label: "Document Volume",
-                data: dataVals,
-                borderColor: "#0284c7",
-                borderWidth: 3,
-                backgroundColor: gradient,
-                fill: true,
-                tension: 0.28,
-                pointBackgroundColor: "#0284c7",
-                pointBorderColor: "#ffffff",
-                pointBorderWidth: 2,
-                pointRadius: 6,
-                pointHoverRadius: 8
-            }]
+            datasets: [
+                {
+                    label: "Document Volume",
+                    data: volumeVals,
+                    yAxisID: "y",
+                    borderColor: "#0284c7",
+                    borderWidth: 3,
+                    backgroundColor: gradient,
+                    fill: true,
+                    tension: 0.28,
+                    pointBackgroundColor: "#0284c7",
+                    pointBorderColor: "#ffffff",
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                },
+                {
+                    label: "Yearly CAGR (%)",
+                    data: cagrVals,
+                    yAxisID: "y1",
+                    borderColor: "#10b981",
+                    borderWidth: 2.2,
+                    borderDash: [5, 4],
+                    backgroundColor: "transparent",
+                    fill: false,
+                    tension: 0.28,
+                    pointBackgroundColor: "#10b981",
+                    pointBorderColor: "#ffffff",
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }
+            ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             layout: {
-                padding: { top: 25, bottom: 10, left: 10, right: 15 }
+                padding: { top: 32, bottom: 10, left: 10, right: 15 }
+            },
+            interaction: {
+                mode: "index",
+                intersect: false
             },
             scales: {
                 x: {
@@ -160,6 +204,8 @@ function renderExecChart(points) {
                     }
                 },
                 y: {
+                    type: "linear",
+                    position: "left",
                     beginAtZero: true,
                     grid: {
                         color: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"
@@ -168,21 +214,77 @@ function renderExecChart(points) {
                         color: isDark ? "#94a3b8" : "#64748b",
                         font: { family: "Inter", size: 10 },
                         callback: val => Number(val).toLocaleString()
+                    },
+                    title: {
+                        display: true,
+                        text: "Volume (Docs)",
+                        color: isDark ? "#94a3b8" : "#64748b",
+                        font: { family: "Inter", size: 10, weight: "600" }
+                    }
+                },
+                y1: {
+                    type: "linear",
+                    position: "right",
+                    grid: { display: false },
+                    ticks: {
+                        color: "#10b981",
+                        font: { family: "Inter", size: 10, weight: "bold" },
+                        callback: val => (val >= 0 ? "+" : "") + val + "%"
+                    },
+                    title: {
+                        display: true,
+                        text: "Yearly CAGR (%)",
+                        color: "#10b981",
+                        font: { family: "Inter", size: 10, weight: "600" }
                     }
                 }
             },
             plugins: {
-                legend: { display: false },
+                legend: {
+                    display: true,
+                    position: "top",
+                    align: "end",
+                    labels: {
+                        boxWidth: 14,
+                        boxHeight: 3,
+                        color: isDark ? "#cbd5e1" : "#475569",
+                        font: { family: "Inter", size: 11, weight: "600" },
+                        padding: 12
+                    }
+                },
                 tooltip: {
-                    backgroundColor: isDark ? "#1e293b" : "#ffffff",
+                    backgroundColor: isDark ? "#0f172a" : "#ffffff",
                     titleColor: isDark ? "#f8fafc" : "#0f172a",
                     bodyColor: isDark ? "#cbd5e1" : "#334155",
                     borderColor: isDark ? "#334155" : "#e2e8f0",
                     borderWidth: 1,
-                    padding: 10,
-                    displayColors: false,
+                    padding: 12,
+                    boxPadding: 4,
+                    cornerRadius: 8,
                     callbacks: {
-                        label: ctx => `Volume: ${ctx.parsed.y.toLocaleString()} documents`
+                        title: items => `Year: ${items[0].label}`,
+                        label: ctx => {
+                            if (ctx.datasetIndex === 0) {
+                                return `📦 Document Volume: ${ctx.parsed.y.toLocaleString()} documents`;
+                            } else {
+                                const val = ctx.parsed.y;
+                                if (ctx.dataIndex === 0) {
+                                    return `🌱 Baseline Portfolio Year`;
+                                }
+                                const sign = val >= 0 ? "+" : "";
+                                return `📈 Yearly CAGR: ${sign}${val.toFixed(1)}%`;
+                            }
+                        },
+                        afterBody: items => {
+                            const idx = items[0].dataIndex;
+                            const pt = points[idx];
+                            const lines = [];
+                            if (pt.yoyGrowthPct !== null && pt.yoyGrowthPct !== undefined) {
+                                const sign = pt.yoyGrowthPct >= 0 ? "+" : "";
+                                lines.push(`⚡ YoY Annual Growth: ${sign}${pt.yoyGrowthPct.toFixed(1)}%`);
+                            }
+                            return lines;
+                        }
                     }
                 }
             }
@@ -200,13 +302,17 @@ function renderExecTable(data) {
         ? data.yearlyPoints.map(p => p.year)
         : (data.siteRows[0] ? data.siteRows[0].yearlyVolumes.map((_, idx) => (2021 + idx)) : []);
 
-    const nYears = years.length > 1 ? (years.length - 1) : 5;
+    const spanYears = (data.spanYears && data.spanYears > 0)
+        ? data.spanYears
+        : (years.length > 1 ? (years[years.length - 1] - years[0]) : 5);
 
-    // Header with 5-Year CAGR
+    const cagrColumnHeader = `${spanYears}-Year CAGR`;
+
+    // Dynamic header with N-Year CAGR
     tableHead.innerHTML = `<tr>
         <th style="padding:12px 18px;text-align:left;font-weight:700;font-size:11px;letter-spacing:0.04em;text-transform:uppercase;">Site</th>
         ${years.map(y => `<th style="padding:12px 10px;text-align:right;font-weight:700;font-size:11px;">${y}</th>`).join("")}
-        <th style="padding:12px 18px;text-align:right;font-weight:700;font-size:11px;color:var(--green);">${nYears}-Year CAGR</th>
+        <th style="padding:12px 18px;text-align:right;font-weight:700;font-size:11px;color:var(--green);">${cagrColumnHeader}</th>
     </tr>`;
 
     let html = "";

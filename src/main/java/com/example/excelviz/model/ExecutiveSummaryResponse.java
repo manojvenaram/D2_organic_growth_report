@@ -53,6 +53,11 @@ public class ExecutiveSummaryResponse {
     public String getSubheadline() { return subheadline; }
     public void setSubheadline(String subheadline) { this.subheadline = subheadline; }
 
+    private int spanYears;
+
+    public int getSpanYears() { return spanYears; }
+    public void setSpanYears(int spanYears) { this.spanYears = spanYears; }
+
     public List<String> getBulletInsights() { return bulletInsights; }
     public void setBulletInsights(List<String> bulletInsights) { this.bulletInsights = bulletInsights; }
 
@@ -60,12 +65,22 @@ public class ExecutiveSummaryResponse {
         private int year;
         private int volume;
         private Double yoyGrowthPct; // null for first year
+        private Double cagrPct;      // null for first year (baseline), compound annual growth rate to this year
+        private int elapsedYears;    // 0 for baseline, 1, 2, ...
 
         public YearlyGrowthPoint() {}
         public YearlyGrowthPoint(int year, int volume, Double yoyGrowthPct) {
             this.year = year;
             this.volume = volume;
             this.yoyGrowthPct = yoyGrowthPct;
+        }
+
+        public YearlyGrowthPoint(int year, int volume, Double yoyGrowthPct, Double cagrPct, int elapsedYears) {
+            this.year = year;
+            this.volume = volume;
+            this.yoyGrowthPct = yoyGrowthPct;
+            this.cagrPct = cagrPct;
+            this.elapsedYears = elapsedYears;
         }
 
         public int getYear() { return year; }
@@ -76,6 +91,12 @@ public class ExecutiveSummaryResponse {
 
         public Double getYoyGrowthPct() { return yoyGrowthPct; }
         public void setYoyGrowthPct(Double yoyGrowthPct) { this.yoyGrowthPct = yoyGrowthPct; }
+
+        public Double getCagrPct() { return cagrPct; }
+        public void setCagrPct(Double cagrPct) { this.cagrPct = cagrPct; }
+
+        public int getElapsedYears() { return elapsedYears; }
+        public void setElapsedYears(int elapsedYears) { this.elapsedYears = elapsedYears; }
     }
 
     public static class SiteOverviewRow {

@@ -50,10 +50,10 @@ $$\text{YoY Growth \%}_t = \left(\frac{V_t - V_{t-1}}{V_{t-1}}\right) \times 100
   * **2024–2025:** $+304.3\%$ YoY ($10,557 \rightarrow 42,687$, major D2 plant deployment)
   * **2025–2026:** $-24.7\%$ YoY ($42,687 \rightarrow 32,138$, operational steady state)
 
-### 5. Compound Annual Growth Rate (5-Year CAGR)
+### 5. Dynamic Compound Annual Growth Rate ($n$-Year CAGR)
 $$\text{CAGR} = \left[\left(\frac{V_n}{V_0}\right)^{\frac{1}{n}} - 1\right] \times 100$$
-where $n = Y_n - Y_0 = 5$ operational periods.
-$$\text{CAGR} = \left[\left(\frac{32,138}{4,491}\right)^{\frac{1}{5}} - 1\right] \times 100 = \mathbf{+48.2\%}$$
+where $n = Y_n - Y_0$ is dynamically determined from the uploaded dataset (e.g. 5-Year CAGR for 2021–2026, 10-Year CAGR for 10-year datasets). The **Active Site Growth Overview** matrix dynamically binds its header and calculations to the exact year span.
+In addition, the **Document Volume Trajectory & Growth Curve** features dual-axis and node tracking with **Yearly CAGR (%)** dynamically plotted for each year along the operational timeline.
 
 ---
 

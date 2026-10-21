@@ -34,4 +34,8 @@ public class SiteGrowthData {
 
     public double getCagr() { return cagr; }
     public void setCagr(double cagr) { this.cagr = cagr; }
+
+    private int spanYears;
+    public int getSpanYears() { return spanYears; }
+    public void setSpanYears(int spanYears) { this.spanYears = spanYears; }
 }

@@ -60,6 +60,8 @@ public class GrowthAnalyticsService {
         List<ExecutiveSummaryResponse.SiteOverviewRow> activeSiteRows = new ArrayList<>();
         int[] portfolioYearlyTotals = new int[years.size()];
 
+        int spanYears = Math.max(1, currentYear - baselineYear);
+
         for (Map.Entry<String, Map<Integer, Integer>> entry : siteYearlyMap.entrySet()) {
             String siteName = entry.getKey();
             Map<Integer, Integer> yMap = entry.getValue();
@@ -80,8 +82,8 @@ public class GrowthAnalyticsService {
             int baseV = vols.get(0);
             int currV = vols.get(vols.size() - 1);
             double growth = baseV > 0 ? Math.round(((double)(currV - baseV) / baseV * 100.0) * 10.0) / 10.0 : 0.0;
-            double cagr = (baseV > 0 && currV > 0 && years.size() > 1)
-                    ? Math.round((Math.pow((double) currV / baseV, 1.0 / (years.size() - 1)) - 1.0) * 1000.0) / 10.0
+            double cagr = (baseV > 0 && currV > 0 && spanYears > 0)
+                    ? Math.round((Math.pow((double) currV / baseV, 1.0 / spanYears) - 1.0) * 1000.0) / 10.0
                     : 0.0;
 
             activeSiteRows.add(new ExecutiveSummaryResponse.SiteOverviewRow(siteName, vols, growth, cagr));
@@ -93,6 +95,7 @@ public class GrowthAnalyticsService {
         ));
 
         // Portfolio totals across active sites
+        int portBase = portfolioYearlyTotals.length > 0 ? portfolioYearlyTotals[0] : 0;
         List<Integer> totalVols = new ArrayList<>();
         List<ExecutiveSummaryResponse.YearlyGrowthPoint> points = new ArrayList<>();
 
@@ -110,17 +113,23 @@ public class GrowthAnalyticsService {
                     yoyPct = 0.0;
                 }
             }
-            points.add(new ExecutiveSummaryResponse.YearlyGrowthPoint(y, vol, yoyPct));
+
+            Double ptCagr = null;
+            int elapsed = y - baselineYear;
+            if (elapsed > 0 && portBase > 0 && vol > 0) {
+                ptCagr = Math.round((Math.pow((double) vol / portBase, 1.0 / elapsed) - 1.0) * 1000.0) / 10.0;
+            }
+
+            points.add(new ExecutiveSummaryResponse.YearlyGrowthPoint(y, vol, yoyPct, ptCagr, elapsed));
         }
 
-        int portBase = totalVols.isEmpty() ? 0 : totalVols.get(0);
         int portCurr = totalVols.isEmpty() ? 0 : totalVols.get(totalVols.size() - 1);
         int portPrev = totalVols.size() >= 2 ? totalVols.get(totalVols.size() - 2) : portCurr;
 
         double overallGrowth = portBase > 0 ? Math.round(((double)(portCurr - portBase) / portBase * 100.0) * 10.0) / 10.0 : 0.0;
         double latestYoy = portPrev > 0 ? Math.round(((double)(portCurr - portPrev) / portPrev * 100.0) * 10.0) / 10.0 : 0.0;
-        double overallCagr = (portBase > 0 && portCurr > 0 && years.size() > 1)
-                ? Math.round((Math.pow((double) portCurr / portBase, 1.0 / (years.size() - 1)) - 1.0) * 1000.0) / 10.0
+        double overallCagr = (portBase > 0 && portCurr > 0 && spanYears > 0)
+                ? Math.round((Math.pow((double) portCurr / portBase, 1.0 / spanYears) - 1.0) * 1000.0) / 10.0
                 : 0.0;
 
         ExecutiveSummaryResponse.SiteOverviewRow totalRow = new ExecutiveSummaryResponse.SiteOverviewRow(
@@ -132,6 +141,7 @@ public class GrowthAnalyticsService {
         resp.setBaselineVolume(portBase);
         resp.setCurrentYear(currentYear);
         resp.setCurrentVolume(portCurr);
+        resp.setSpanYears(spanYears);
         resp.setOverallGrowthPct(overallGrowth);
         resp.setLatestYoyGrowthPct(latestYoy);
         resp.setDocType(dt);
@@ -144,7 +154,7 @@ public class GrowthAnalyticsService {
         resp.setSubheadline("Growth reflects strong organic Documentum D2 adoption, driven by plant-level digital manufacturing lifecycles.");
 
         List<String> bullets = new ArrayList<>();
-        bullets.add("Steady compound organic growth (" + (overallCagr >= 0 ? "+" : "") + overallCagr + "% 5-year CAGR) across active manufacturing facilities.");
+        bullets.add("Steady compound organic growth (" + (overallCagr >= 0 ? "+" : "") + overallCagr + "% " + spanYears + "-year CAGR) across active manufacturing facilities.");
         if (!points.isEmpty()) {
             ExecutiveSummaryResponse.YearlyGrowthPoint maxPeak = points.stream()
                     .filter(p -> p.getYoyGrowthPct() != null)
@@ -180,8 +190,9 @@ public class GrowthAnalyticsService {
             data.setYoyGrowth(0.0);
         }
 
+        int span = data.getSpanYears() > 0 ? data.getSpanYears() : 5;
         if (data.getBaselineVolume() > 0) {
-            double cagr = (Math.pow((data.getCurrentYearVolume() / data.getBaselineVolume()), (1.0 / 5.0)) - 1.0) * 100;
+            double cagr = (Math.pow((data.getCurrentYearVolume() / data.getBaselineVolume()), (1.0 / (double) span)) - 1.0) * 100;
             data.setCagr(Math.round(cagr * 10.0) / 10.0);
         } else {
             data.setCagr(0.0);
