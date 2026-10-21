@@ -16,7 +16,7 @@ public class GrowthAnalyticsService {
     private ExcelCacheService cacheService;
 
     public ExecutiveSummaryResponse getExecutiveSummary(String docType) {
-        String dt = docType != null ? docType.toUpperCase() : "CREATED";
+        String dt = (docType != null && !docType.isBlank()) ? docType.toUpperCase() : "BOTH";
 
         List<Integer> years = cacheService.getAvailableYears().stream().sorted().toList();
         if (years.isEmpty()) {

@@ -1,20 +1,16 @@
 /* =====================================================================
- * growth.js — Executive Summary & Document Growth Intelligence View
- * Renders the exact 2021–2026 Executive Slide layout:
- * - 4 Top KPI Cards
- * - Year-over-Year Document Growth Curve with point labels & YoY% arrows
- * - Leadership Insight Callout Card
- * - Active Site Growth Overview Matrix (excludes divested sites)
+ * growth.js — Active Site Growth & CAGR (Compound Annual Growth Rate)
+ * Calculates and renders:
+ * - Document Volume Trajectory Curve Graph
+ * - Active Site Growth Overview Matrix across active manufacturing facilities
+ * - 5-Year CAGR (Annual Compound Growth Rate) formula: ((Vn / V0)^(1/n) - 1) * 100
  * ===================================================================== */
 
 var execChartInstance = null;
-var currentExecDocType = "CREATED";
+var currentExecDocType = "BOTH";
 
 function setExecDocType(type) {
     currentExecDocType = type;
-    document.querySelectorAll(".exec-doc-pill").forEach(p => {
-        p.classList.toggle("active", p.dataset.type === type);
-    });
     loadExecutiveSummary();
 }
 
@@ -42,10 +38,31 @@ function loadExecutiveSummary() {
 window.loadGrowthAnalytics = loadExecutiveSummary;
 
 function renderExecutiveSlide(data) {
+    // 1. Immediately purge any legacy pills or cards if Chrome held stale cached DOM
+    document.querySelectorAll(".exec-doc-pill").forEach(p => {
+        const wrap = p.closest("div[style*='background']");
+        if (wrap && !wrap.contains(document.getElementById("execTableHead"))) {
+            wrap.remove();
+        } else {
+            p.remove();
+        }
+    });
+    ["execKpiBase", "execKpiCurr", "execKpiOverall", "execKpiYoy", "execHeadline", "execBullets"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            const card = el.closest(".tab-page > div, div[style*='box-shadow']");
+            if (card && !card.contains(document.getElementById("execTableHead")) && !card.contains(document.getElementById("execChartCanvas"))) {
+                card.remove();
+            } else {
+                el.remove();
+            }
+        }
+    });
+
     const emptyEl = document.getElementById("execEmptyState");
     const contentEl = document.getElementById("execContentContainer");
 
-    if (!data || !data.yearlyPoints || data.yearlyPoints.length === 0) {
+    if (!data || !data.siteRows || data.siteRows.length === 0) {
         if (emptyEl) emptyEl.style.display = "block";
         if (contentEl) contentEl.style.display = "none";
         return;
@@ -54,51 +71,12 @@ function renderExecutiveSlide(data) {
     if (emptyEl) emptyEl.style.display = "none";
     if (contentEl) contentEl.style.display = "flex";
 
-    // 1. KPI Cards
-    const kpiBase = document.getElementById("execKpiBase");
-    const kpiCurr = document.getElementById("execKpiCurr");
-    const kpiOverall = document.getElementById("execKpiOverall");
-    const kpiYoy = document.getElementById("execKpiYoy");
-
-    if (kpiBase) kpiBase.textContent = Number(data.baselineVolume).toLocaleString();
-    if (kpiCurr) kpiCurr.textContent = Number(data.currentVolume).toLocaleString();
-
-    if (kpiOverall) {
-        const sign = data.overallGrowthPct >= 0 ? "+" : "";
-        kpiOverall.textContent = `${sign}${data.overallGrowthPct.toFixed(1)}%`;
-    }
-    if (kpiYoy) {
-        const sign = data.latestYoyGrowthPct >= 0 ? "+" : "";
-        kpiYoy.textContent = `${sign}${data.latestYoyGrowthPct.toFixed(1)}%`;
+    // 1. Render Volume Trajectory Curve Graph
+    if (data.yearlyPoints && data.yearlyPoints.length > 0) {
+        renderExecChart(data.yearlyPoints);
     }
 
-    const baseLbl = document.getElementById("execKpiBaseLabel");
-    const currLbl = document.getElementById("execKpiCurrLabel");
-    if (baseLbl) baseLbl.textContent = `${data.baselineYear} Baseline`;
-    if (currLbl) currLbl.textContent = `${data.currentYear} Volume`;
-
-    // 2. Leadership Insights
-    const headlineEl = document.getElementById("execHeadline");
-    const subheadlineEl = document.getElementById("execSubheadline");
-    const bulletsEl = document.getElementById("execBullets");
-
-    if (headlineEl) headlineEl.textContent = data.headline || "";
-    if (subheadlineEl) subheadlineEl.textContent = data.subheadline || "";
-
-    if (bulletsEl && data.bulletInsights) {
-        bulletsEl.innerHTML = data.bulletInsights.map((b, i) => {
-            const icons = ["📊", "🚀", "📈", "🛡️"];
-            return `<li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;font-size:12px;color:var(--text);line-height:1.4;">
-                <span style="font-size:14px;flex-shrink:0;">${icons[i % icons.length]}</span>
-                <span>${b}</span>
-            </li>`;
-        }).join("");
-    }
-
-    // 3. Render YoY Chart
-    renderExecChart(data.yearlyPoints);
-
-    // 4. Render Active Sites Table
+    // 2. Render Active Sites Table with CAGR
     renderExecTable(data);
 }
 
@@ -117,7 +95,6 @@ function renderExecChart(points) {
     const labels = points.map(p => String(p.year));
     const dataVals = points.map(p => p.volume);
 
-    // Custom plugin to draw volume labels and YoY badges above points
     const customLabelsPlugin = {
         id: "customLabelsPlugin",
         afterDatasetsDraw(chart) {
@@ -133,49 +110,19 @@ function renderExecChart(points) {
                 const { x, y } = element;
                 const pt = points[index];
 
-                // Draw volume label
                 chartCtx.fillStyle = isDark ? "#ffffff" : "#0f172a";
-                chartCtx.fillText(pt.volume.toLocaleString(), x, y - 18);
-
-                // Draw YoY arrow and % badge
-                if (index > 0 && pt.yoyGrowthPct !== null) {
-                    const prevElement = meta.data[index - 1];
-                    const midX = (prevElement.x + x) / 2;
-                    const midY = (prevElement.y + y) / 2 - 12;
-
-                    const sign = pt.yoyGrowthPct >= 0 ? "+" : "";
-                    const badgeText = `↗ ${sign}${pt.yoyGrowthPct.toFixed(1)}%`;
-
-                    chartCtx.font = "bold 9.5px Inter, sans-serif";
-                    const badgeW = chartCtx.measureText(badgeText).width + 8;
-                    const badgeH = 16;
-
-                    // Badge pill
-                    chartCtx.fillStyle = pt.yoyGrowthPct >= 0
-                        ? (isDark ? "rgba(16,185,129,0.25)" : "rgba(5,150,105,0.18)")
-                        : (isDark ? "rgba(244,63,94,0.25)" : "rgba(225,29,72,0.18)");
-                    chartCtx.strokeStyle = pt.yoyGrowthPct >= 0 ? "#10b981" : "#f43f5e";
-                    chartCtx.lineWidth = 1;
-
-                    roundRect(chartCtx, midX - badgeW / 2, midY - badgeH + 2, badgeW, badgeH, 4);
-                    chartCtx.fill();
-                    chartCtx.stroke();
-
-                    // Text
-                    chartCtx.fillStyle = pt.yoyGrowthPct >= 0 ? "#10b981" : "#f43f5e";
-                    chartCtx.fillText(badgeText, midX, midY);
-                }
+                chartCtx.fillText(pt.volume.toLocaleString(), x, y - 10);
             });
             chartCtx.restore();
         }
     };
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height || 260);
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height || 300);
     if (isDark) {
-        gradient.addColorStop(0, "rgba(59, 130, 246, 0.45)");
+        gradient.addColorStop(0, "rgba(59, 130, 246, 0.40)");
         gradient.addColorStop(1, "rgba(59, 130, 246, 0.02)");
     } else {
-        gradient.addColorStop(0, "rgba(37, 99, 235, 0.35)");
+        gradient.addColorStop(0, "rgba(37, 99, 235, 0.30)");
         gradient.addColorStop(1, "rgba(37, 99, 235, 0.02)");
     }
 
@@ -190,7 +137,7 @@ function renderExecChart(points) {
                 borderWidth: 3,
                 backgroundColor: gradient,
                 fill: true,
-                tension: 0.25,
+                tension: 0.28,
                 pointBackgroundColor: "#0284c7",
                 pointBorderColor: "#ffffff",
                 pointBorderWidth: 2,
@@ -202,7 +149,7 @@ function renderExecChart(points) {
             responsive: true,
             maintainAspectRatio: false,
             layout: {
-                padding: { top: 35, bottom: 10, left: 10, right: 15 }
+                padding: { top: 25, bottom: 10, left: 10, right: 15 }
             },
             scales: {
                 x: {
@@ -244,59 +191,52 @@ function renderExecChart(points) {
     });
 }
 
-function roundRect(ctx, x, y, width, height, radius) {
-    ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + width - radius, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-    ctx.lineTo(x + width, y + height - radius);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-    ctx.lineTo(x + radius, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-    ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
-    ctx.closePath();
-}
-
 function renderExecTable(data) {
     const tableHead = document.getElementById("execTableHead");
     const tableBody = document.getElementById("execTableBody");
     if (!tableHead || !tableBody) return;
 
-    const years = data.yearlyPoints.map(p => p.year);
+    const years = (data.yearlyPoints && data.yearlyPoints.length > 0)
+        ? data.yearlyPoints.map(p => p.year)
+        : (data.siteRows[0] ? data.siteRows[0].yearlyVolumes.map((_, idx) => (2021 + idx)) : []);
 
-    // Header
+    const nYears = years.length > 1 ? (years.length - 1) : 5;
+
+    // Header with 5-Year CAGR
     tableHead.innerHTML = `<tr>
-        <th style="padding:10px 14px;text-align:left;font-weight:700;font-size:11px;letter-spacing:0.04em;">Site</th>
-        ${years.map(y => `<th style="padding:10px 8px;text-align:right;font-weight:700;font-size:11px;">${y}</th>`).join("")}
-        <th style="padding:10px 14px;text-align:right;font-weight:700;font-size:11px;">Overall Growth</th>
+        <th style="padding:12px 18px;text-align:left;font-weight:700;font-size:11px;letter-spacing:0.04em;text-transform:uppercase;">Site</th>
+        ${years.map(y => `<th style="padding:12px 10px;text-align:right;font-weight:700;font-size:11px;">${y}</th>`).join("")}
+        <th style="padding:12px 18px;text-align:right;font-weight:700;font-size:11px;color:var(--green);">${nYears}-Year CAGR</th>
     </tr>`;
 
     let html = "";
 
     // Site rows
     data.siteRows.forEach((row, i) => {
-        const sign = row.overallGrowthPct >= 0 ? "+" : "";
-        const growthColor = row.overallGrowthPct >= 0 ? "#10b981" : "#f43f5e";
+        const cagr = row.cagrPct !== undefined ? row.cagrPct : 0.0;
+        const cagrSign = cagr >= 0 ? "+" : "";
+        const cagrColor = cagr >= 0 ? "#10b981" : "#f43f5e";
+
         const bgStyle = i % 2 === 0 ? "background:var(--hover);" : "";
 
         html += `<tr style="${bgStyle};transition:background .15s;">
-            <td style="padding:9px 14px;font-weight:600;font-size:12px;color:var(--text);">${row.siteName}</td>
-            ${row.yearlyVolumes.map(v => `<td style="padding:9px 8px;text-align:right;font-size:12px;color:var(--text);">${v.toLocaleString()}</td>`).join("")}
-            <td style="padding:9px 14px;text-align:right;font-weight:700;font-size:12px;color:${growthColor};">${sign}${row.overallGrowthPct.toFixed(1)}%</td>
+            <td style="padding:11px 18px;font-weight:600;font-size:12px;color:var(--text);">${row.siteName}</td>
+            ${row.yearlyVolumes.map(v => `<td style="padding:11px 10px;text-align:right;font-size:12px;color:var(--text);">${v.toLocaleString()}</td>`).join("")}
+            <td style="padding:11px 18px;text-align:right;font-weight:700;font-size:12px;color:${cagrColor};">${cagrSign}${cagr.toFixed(1)}%</td>
         </tr>`;
     });
 
     // Total row
     if (data.totalRow) {
         const tr = data.totalRow;
-        const sign = tr.overallGrowthPct >= 0 ? "+" : "";
-        const growthColor = tr.overallGrowthPct >= 0 ? "#10b981" : "#f43f5e";
+        const cagr = tr.cagrPct !== undefined ? tr.cagrPct : 0.0;
+        const cagrSign = cagr >= 0 ? "+" : "";
+        const cagrColor = cagr >= 0 ? "#10b981" : "#f43f5e";
 
         html += `<tr style="border-top:2px solid var(--border);background:var(--card);font-weight:700;">
-            <td style="padding:11px 14px;font-size:12px;color:var(--text);font-weight:700;">${tr.siteName}</td>
-            ${tr.yearlyVolumes.map(v => `<td style="padding:11px 8px;text-align:right;font-size:12px;color:var(--text);font-weight:700;">${v.toLocaleString()}</td>`).join("")}
-            <td style="padding:11px 14px;text-align:right;font-weight:800;font-size:12px;color:${growthColor};">${sign}${tr.overallGrowthPct.toFixed(1)}%</td>
+            <td style="padding:13px 18px;font-size:12px;color:var(--text);font-weight:700;">${tr.siteName}</td>
+            ${tr.yearlyVolumes.map(v => `<td style="padding:13px 10px;text-align:right;font-size:12px;color:var(--text);font-weight:700;">${v.toLocaleString()}</td>`).join("")}
+            <td style="padding:13px 18px;text-align:right;font-weight:800;font-size:13px;color:${cagrColor};">${cagrSign}${cagr.toFixed(1)}%</td>
         </tr>`;
     }
 

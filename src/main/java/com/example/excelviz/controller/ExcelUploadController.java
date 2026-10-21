@@ -50,4 +50,11 @@ public class ExcelUploadController {
         log.info("Upload complete: {} ({} sites loaded)", name, siteCount);
         return ResponseEntity.ok(Map.of("message", "Excel uploaded and processed successfully (" + siteCount + " sites loaded)"));
     }
+
+    @PostMapping("/clear")
+    public ResponseEntity<Map<String, String>> clearCache() {
+        excelCacheService.clearCache();
+        log.info("Excel cache cleared");
+        return ResponseEntity.ok(Map.of("message", "Cache cleared successfully"));
+    }
 }

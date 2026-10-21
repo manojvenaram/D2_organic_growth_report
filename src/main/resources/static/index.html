@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>D2 Organic Growth Report — Analytics Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -31,11 +34,14 @@
         .nav-badge { font-size:11px; color:var(--muted); background:var(--card); border:1px solid var(--border); padding:3px 10px; border-radius:20px; }
         .theme-btn { width:34px; height:34px; border-radius:8px; border:1px solid var(--border); background:var(--card); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; transition:all .15s; }
         .theme-btn:hover { border-color:var(--accent); }
-        .statusbar { display:none; flex-shrink:0; padding:6px 20px; font-size:12px; font-weight:500; align-items:center; gap:8px; }
+        .statusbar { display:none; flex-shrink:0; padding:6px 20px; font-size:12px; font-weight:500; align-items:center; justify-content:space-between; gap:8px; transition:opacity .3s ease; }
         .statusbar.show { display:flex; }
         .statusbar.ok  { background:rgba(16,185,129,.08); color:var(--green);  border-bottom:1px solid rgba(16,185,129,.15); }
         .statusbar.err { background:rgba(244,63,94,.08);  color:var(--red);    border-bottom:1px solid rgba(244,63,94,.15); }
         .statusbar.info{ background:rgba(91,141,238,.08); color:var(--accent); border-bottom:1px solid rgba(91,141,238,.15); }
+        .status-msg { display:flex; align-items:center; gap:8px; flex:1; }
+        .status-close { background:none; border:none; color:inherit; font-size:16px; cursor:pointer; opacity:.7; padding:0 4px; line-height:1; }
+        .status-close:hover { opacity:1; }
         .tabs { flex-shrink:0; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 20px; gap:2px; }
         .tab  { padding:11px 18px; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; user-select:none; display:flex; align-items:center; gap:6px; }
         .tab:hover  { color:var(--text); background:var(--hover); }
@@ -610,162 +616,80 @@
 </div>
 
 <!-- GROWTH ANALYTICS VIEW -->
-<div class="tab-page" id="page-growth" style="flex-direction:column;overflow-y:auto;padding:18px 24px;gap:18px;">
-
-    <!-- 1. Header Banner -->
-    <div style="background:linear-gradient(135deg, #091e3a 0%, #0d3868 55%, #1e3a8a 100%);border-radius:12px;padding:20px 24px;color:#fff;display:flex;align-items:center;justify-content:space-between;box-shadow:0 8px 24px rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.12);">
-        <div style="display:flex;align-items:center;gap:16px;">
-            <div style="width:48px;height:48px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:26px;backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.2);">
-                📈
-            </div>
-            <div>
-                <h1 style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.02em;margin:0;color:#ffffff;line-height:1.2;">
-                    Growth Analytics & Executive Intelligence
-                </h1>
-                <div style="font-size:12px;color:#93c5fd;margin-top:4px;font-weight:500;">
-                    Documentum D2 Life Sciences eDMS Organic Document Volumes
-                </div>
-            </div>
-        </div>
-
-        <div style="display:flex;align-items:center;gap:12px;">
-            <!-- Doc Type Toggle -->
-            <div style="display:flex;background:rgba(0,0,0,0.3);padding:3px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);">
-                <button class="exec-doc-pill active" data-type="CREATED" onclick="setExecDocType('CREATED')" style="padding:6px 14px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:#2563eb;color:#fff;transition:all .15s;">
-                    🌱 Organic Created Only
-                </button>
-                <button class="exec-doc-pill" data-type="BOTH" onclick="setExecDocType('BOTH')" style="padding:6px 14px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:transparent;color:#94a3b8;transition:all .15s;">
-                    📦 Total (Created + Migrated)
-                </button>
-            </div>
-        </div>
-    </div>
+<div class="tab-page" id="page-growth" style="flex-direction:column;overflow-y:auto;padding:20px 24px;gap:20px;">
 
     <!-- Empty State (When no data uploaded yet) -->
-    <div id="execEmptyState" style="display:none;background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:60px 24px;text-align:center;color:var(--muted);margin-top:10px;">
+    <div id="execEmptyState" style="background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:60px 24px;text-align:center;color:var(--muted);margin-top:10px;">
         <div style="font-size:48px;margin-bottom:12px;">📊</div>
         <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">No Growth Analytics Data Yet</div>
         <div style="font-size:13px;max-width:440px;margin:0 auto;line-height:1.6;">
-            Please select and upload your Excel file from the left sidebar. Once uploaded, this view will automatically display the growth trajectory, YoY changes, and active site breakdown.
+            Please select and upload your Excel file from the left sidebar. Once uploaded, this view will automatically display the year-over-year document growth and active site breakdown.
         </div>
     </div>
 
-    <div id="execContentContainer" style="display:flex;flex-direction:column;gap:18px;">
-    <!-- 2. Top 4 KPI Cards -->
-    <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:14px;">
-        <!-- Card 1: Baseline -->
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;flex-direction:column;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,0.05);position:relative;overflow:hidden;">
-            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#3b82f6;"></div>
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-                <span id="execKpiBaseLabel" style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;">Baseline</span>
-                <span style="font-size:16px;">📁</span>
-            </div>
-            <div id="execKpiBase" style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:800;color:var(--text);">—</div>
-            <div style="font-size:11px;color:var(--muted);">Starting Portfolio Documents</div>
-        </div>
+    <!-- Active Content Container (Shown once data is uploaded) -->
+    <div id="execContentContainer" style="display:none;flex-direction:column;gap:20px;">
 
-        <!-- Card 2: Current Volume -->
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;flex-direction:column;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,0.05);position:relative;overflow:hidden;">
-            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#10b981;"></div>
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-                <span id="execKpiCurrLabel" style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;">Current Volume</span>
-                <span style="font-size:16px;">📈</span>
-            </div>
-            <div id="execKpiCurr" style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:800;color:#10b981;">—</div>
-            <div style="font-size:11px;color:var(--muted);">Current Portfolio Documents</div>
-        </div>
-
-        <!-- Card 3: Overall Growth -->
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;flex-direction:column;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,0.05);position:relative;overflow:hidden;">
-            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#8b5cf6;"></div>
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-                <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;">Overall Growth</span>
-                <span style="font-size:16px;">🚀</span>
-            </div>
-            <div id="execKpiOverall" style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:800;color:#8b5cf6;">—</div>
-            <div style="font-size:11px;color:var(--muted);">Compound Growth</div>
-        </div>
-
-        <!-- Card 4: Latest YoY -->
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;flex-direction:column;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,0.05);position:relative;overflow:hidden;">
-            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#06b6d4;"></div>
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-                <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;">Latest YoY Growth</span>
-                <span style="font-size:16px;">⚡</span>
-            </div>
-            <div id="execKpiYoy" style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:800;color:#06b6d4;">—</div>
-            <div style="font-size:11px;color:var(--muted);">Year-over-Year</div>
-        </div>
-    </div>
-
-    <!-- 3. Middle Section: YoY Curve + Leadership Insight -->
-    <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:14px;min-height:300px;">
-        <!-- Left: Curve Chart -->
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;display:flex;flex-direction:column;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--text);">
-                    📈 Year-over-Year Document Growth
+        <!-- 1. Document Volume Trajectory Curve Graph Card -->
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;display:flex;flex-direction:column;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:12px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:38px;height:38px;border-radius:10px;background:rgba(59,130,246,0.12);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:18px;">
+                        📈
+                    </div>
+                    <div>
+                        <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--text);">
+                            Document Volume Trajectory & Growth Curve
+                        </div>
+                        <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                            Active Manufacturing Facilities Aggregated Volume Trajectory (2021 – 2026)
+                        </div>
+                    </div>
                 </div>
-                <span style="font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:2px 8px;border-radius:6px;">
-                    Active Sites Aggregated
-                </span>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:11px;color:var(--accent);background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);padding:4px 10px;border-radius:6px;font-weight:600;">
+                        Active Sites Aggregated
+                    </span>
+                </div>
             </div>
-            <div style="flex:1;position:relative;min-height:230px;">
+            <div style="position:relative;height:300px;width:100%;">
                 <canvas id="execChartCanvas"></canvas>
             </div>
         </div>
 
-        <!-- Right: Leadership Insight -->
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.05);position:relative;overflow:hidden;">
-            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg, #3b82f6, #8b5cf6);"></div>
-            <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:18px;">💡</span>
-                <span style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--text);">
-                    Leadership Insight
-                </span>
+        <!-- 2. Active Site Growth Overview Table Card (Full Width) -->
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:22px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:40px;height:40px;border-radius:10px;background:rgba(16,185,129,0.14);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:20px;">
+                        📊
+                    </div>
+                    <div>
+                        <div style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:var(--text);">
+                            Active Site Growth Overview
+                        </div>
+                        <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                            Compound Annual Growth Rate (CAGR) and site-by-site portfolio document volumes
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:11px;color:var(--green);background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);padding:4px 10px;border-radius:6px;font-weight:600;">
+                        Active Sites Only
+                    </span>
+                </div>
             </div>
-            <div>
-                <h3 id="execHeadline" style="font-size:15px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:6px;">
-                    Document volume expanded significantly across active sites.
-                </h3>
-                <p id="execSubheadline" style="font-size:12px;color:var(--muted);line-height:1.4;">
-                    Growth reflects strong organic Documentum D2 adoption across plant-level manufacturing lifecycles.
-                </p>
-            </div>
-            <hr style="border:none;border-top:1px solid var(--border);">
-            <ul id="execBullets" style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;">
-            </ul>
-        </div>
-    </div>
 
-    <!-- 4. Bottom Section: Active Site Growth Overview Table -->
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:16px;">📊</span>
-                <span style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--text);">
-                    Active Site Growth Overview
-                </span>
-            </div>
-            <div style="font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:3px 10px;border-radius:6px;font-weight:600;">
-                Active Sites
+            <div style="overflow-x:auto;border-radius:8px;border:1px solid var(--border);">
+                <table style="width:100%;border-collapse:collapse;font-family:'Inter',sans-serif;">
+                    <thead id="execTableHead" style="background:var(--surface);color:var(--muted);border-bottom:1px solid var(--border);">
+                    </thead>
+                    <tbody id="execTableBody">
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div style="overflow-x:auto;">
-            <table style="width:100%;border-collapse:collapse;font-family:'Inter',sans-serif;">
-                <thead id="execTableHead" style="background:var(--surface);color:var(--muted);border-bottom:1px solid var(--border);">
-                </thead>
-                <tbody id="execTableBody">
-                </tbody>
-            </table>
-        </div>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);">
-            <span>• Excludes divested sites • Growth calculated against previous year</span>
-            <span style="font-weight:600;color:var(--accent);">Documentum D2 Life Sciences eDMS</span>
-        </div>
-    </div>
     </div> <!-- end execContentContainer -->
 
 </div>
@@ -785,7 +709,25 @@ function switchTab(tab) {
     if (tabEl) tabEl.classList.add("active");
     if (pageEl) pageEl.classList.add("active");
 }
-function setStatus(msg, type) { const el=document.getElementById("statusBar"); el.textContent=msg; el.className="statusbar show "+type; }
+let statusTimeout = null;
+function hideStatus() {
+    const el = document.getElementById("statusBar");
+    if (!el) return;
+    el.className = "statusbar";
+    el.innerHTML = "";
+}
+function setStatus(msg, type) {
+    const el = document.getElementById("statusBar");
+    if (!el) return;
+    if (statusTimeout) { clearTimeout(statusTimeout); statusTimeout = null; }
+    el.innerHTML = `<span class="status-msg">${msg}</span><button class="status-close" onclick="hideStatus()" title="Dismiss">&times;</button>`;
+    el.className = "statusbar show " + type;
+    if (type === "ok") {
+        statusTimeout = setTimeout(() => {
+            hideStatus();
+        }, 4000);
+    }
+}
 function updateFileFace(input) { document.getElementById("fileFace").textContent=input.files[0]?input.files[0].name:"Choose Excel file…"; }
 function showPostUploadSections() {
     document.getElementById("filterSection").classList.add("show");
@@ -936,21 +878,71 @@ function clearAllCompareSites() {document.querySelectorAll("#compareSiteList inp
 function loadAllSitesForCompare(){fetch("/api/meta/owning-sites").then(r=>r.json()).then(s=>populateCompareSites(Array.from(s)));}
 function toggleTheme(){const l=document.body.classList.toggle("light");document.getElementById("themeBtn").textContent=l?"☀️":"🌙";localStorage.setItem("d2report-theme",l?"light":"dark");}
 (function(){if(localStorage.getItem("d2report-theme")==="light"){document.body.classList.add("light");window.addEventListener("DOMContentLoaded",()=>{const b=document.getElementById("themeBtn");if(b)b.textContent="☀️";});}})();
+function resetDashboardUI() {
+    const f = document.getElementById("excelFile");
+    if (f) f.value = "";
+    const face = document.getElementById("fileFace");
+    if (face) face.textContent = "Choose Excel file…";
+
+    const siteSel = document.getElementById("owningSite");
+    if (siteSel) {
+        siteSel.innerHTML = "<option value=''>— Select site —</option>";
+        siteSel.disabled = true;
+    }
+    ["yearFrom", "yearTo"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = "";
+    });
+    const filterSec = document.getElementById("filterSection");
+    if (filterSec) filterSec.classList.remove("show");
+
+    if (window.chartInstance) {
+        window.chartInstance.destroy();
+        window.chartInstance = null;
+    }
+    const chartC = document.getElementById("chartCanvas");
+    if (chartC) chartC.style.display = "none";
+    const emptyS = document.getElementById("emptyState");
+    if (emptyS) emptyS.style.display = "flex";
+
+    const cmpList = document.getElementById("compareSiteList");
+    if (cmpList) cmpList.innerHTML = "";
+    const cmpCtrls = document.getElementById("compareControls");
+    if (cmpCtrls) cmpCtrls.classList.remove("show");
+    const cmpRes = document.getElementById("compareResult");
+    if (cmpRes) cmpRes.style.display = "none";
+    const cmpNo = document.getElementById("cmpNoData");
+    if (cmpNo) cmpNo.style.display = "block";
+    if (window.compareChartInstance) {
+        window.compareChartInstance.destroy();
+        window.compareChartInstance = null;
+    }
+
+    const execEmpty = document.getElementById("execEmptyState");
+    const execContent = document.getElementById("execContentContainer");
+    if (execEmpty) execEmpty.style.display = "block";
+    if (execContent) execContent.style.display = "none";
+    if (window.execChartInstance) {
+        window.execChartInstance.destroy();
+        window.execChartInstance = null;
+    }
+    const tblHead = document.getElementById("execTableHead");
+    const tblBody = document.getElementById("execTableBody");
+    if (tblHead) tblHead.innerHTML = "";
+    if (tblBody) tblBody.innerHTML = "";
+}
+
 window.addEventListener("DOMContentLoaded", () => {
-    fetch("/api/meta/owning-sites")
-        .then(r => r.json())
-        .then(sites => {
-            if (sites && sites.length > 0) {
-                loadOwningSites();
-                loadYears();
-                setStatus("✅ Data ready (" + sites.length + " sites loaded)", "ok");
-            } else {
-                setStatus("📁 Please choose and upload your Excel file to begin", "info");
-            }
-        })
-        .catch(() => {
+    fetch("/api/excel/clear", { method: "POST" })
+        .catch(err => console.warn("Cache reset error:", err))
+        .finally(() => {
+            resetDashboardUI();
             setStatus("📁 Please choose and upload your Excel file to begin", "info");
         });
+});
+
+window.addEventListener("beforeunload", () => {
+    navigator.sendBeacon("/api/excel/clear");
 });
 function showChart(){
     document.getElementById("emptyState").style.display="none";
